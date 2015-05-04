@@ -1,2 +1,4 @@
-# ca-toronto-ttc-bus-parser
+ca-toronto-ttc-bus-parser
+=========================
+
 Parser for Toronto TTC Bus data
