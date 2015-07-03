@@ -119,6 +119,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final String NORTHBOUND = "northbound";
 	private static final String NORTH = "north";
 
+	private static final String TOWARDS = " towards ";
+	private static final String VIA = " via ";
+
 	@Override
 	public void setTripHeadsign(MRoute mRoute, MTrip mTrip, GTrip gTrip, GSpec gtfs) {
 		String gTripHeadsignLC = gTrip.trip_headsign.toLowerCase(Locale.ENGLISH);
@@ -141,8 +144,15 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 				return;
 			}
 		}
-		System.out.println("Unexpected trip " + gTrip);
-		System.exit(-1);
+		int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
+		if (indexOf >= 0) {
+			gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
+		}
+		indexOf = gTripHeadsignLC.indexOf(VIA);
+		if (indexOf >= 0) {
+			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
+		}
+		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.direction_id);
 	}
 
 	@Override
