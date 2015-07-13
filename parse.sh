@@ -9,4 +9,6 @@ java -Xms4096m -Xmx16384m -Dfile.encoding=UTF-8 \
 bin:\
 $PARSER_CLASSPATH \
 $CLASS;
+RESULT=$?;
 echo ">> Parsing... DONE";
+exit $RESULT;
