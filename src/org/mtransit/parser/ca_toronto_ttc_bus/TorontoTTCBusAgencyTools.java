@@ -145,7 +145,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
-		if (mRoute.id == 36l) {
+		if (mRoute.getId() == 36l) {
 			if (gTrip.getDirectionId() == 1) {
 				mTrip.setHeadsignDirection(MDirectionType.WEST);
 				return;
