@@ -4,17 +4,18 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.mtransit.parser.CleanUtils;
 import org.mtransit.parser.DefaultAgencyTools;
 import org.mtransit.parser.Utils;
 import org.mtransit.parser.gtfs.data.GCalendar;
 import org.mtransit.parser.gtfs.data.GCalendarDate;
 import org.mtransit.parser.gtfs.data.GRoute;
 import org.mtransit.parser.gtfs.data.GSpec;
+import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.gtfs.data.GTrip;
 import org.mtransit.parser.mt.data.MAgency;
 import org.mtransit.parser.mt.data.MDirectionType;
 import org.mtransit.parser.mt.data.MRoute;
-import org.mtransit.parser.CleanUtils;
 import org.mtransit.parser.mt.data.MTrip;
 
 // http://www1.toronto.ca/wps/portal/contentonly?vgnextoid=96f236899e02b210VgnVCM1000003dd60f89RCRD
@@ -84,7 +85,13 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public String getRouteLongName(GRoute gRoute) {
-		return CleanUtils.cleanLabel(gRoute.getRouteLongName().toLowerCase(Locale.ENGLISH));
+		return cleanRouteLongName(gRoute);
+	}
+
+	private String cleanRouteLongName(GRoute gRoute) {
+		String routeLongName = gRoute.getRouteLongName();
+		routeLongName = routeLongName.toLowerCase(Locale.ENGLISH);
+		return CleanUtils.cleanLabel(routeLongName);
 	}
 
 	private static final String AGENCY_COLOR = "B80000"; // RED (AGENCY WEB SITE CSS)
@@ -163,15 +170,42 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return CleanUtils.cleanLabel(tripHeadsign);
 	}
 
-	private static final Pattern AT = Pattern.compile("( at )", Pattern.CASE_INSENSITIVE);
-	private static final String AT_REPLACEMENT = " / ";
+	private static final Pattern SIDE = Pattern.compile("((^|\\W){1}(side)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String SIDE_REPLACEMENT = "$2$4";
+
+	private static final Pattern EAST_ = Pattern.compile("((^|\\W){1}(east)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String EAST_REPLACEMENT = "$2E$4";
+
+	private static final Pattern WEST_ = Pattern.compile("((^|\\W){1}(west)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String WEST_REPLACEMENT = "$2W$4";
+
+	private static final Pattern NORTH_ = Pattern.compile("((^|\\W){1}(north)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String NORTH_REPLACEMENT = "$2N$4";
+
+	private static final Pattern SOUTH_ = Pattern.compile("((^|\\W){1}(south)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String SOUTH_REPLACEMENT = "$2S$4";
 
 	@Override
 	public String cleanStopName(String gStopName) {
 		gStopName = gStopName.toLowerCase(Locale.ENGLISH);
-		gStopName = AT.matcher(gStopName).replaceAll(AT_REPLACEMENT);
+		gStopName = CleanUtils.CLEAN_AT.matcher(gStopName).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
+		gStopName = SIDE.matcher(gStopName).replaceAll(SIDE_REPLACEMENT);
+		gStopName = EAST_.matcher(gStopName).replaceAll(EAST_REPLACEMENT);
+		gStopName = WEST_.matcher(gStopName).replaceAll(WEST_REPLACEMENT);
+		gStopName = NORTH_.matcher(gStopName).replaceAll(NORTH_REPLACEMENT);
+		gStopName = SOUTH_.matcher(gStopName).replaceAll(SOUTH_REPLACEMENT);
 		gStopName = CleanUtils.cleanStreetTypes(gStopName);
 		gStopName = CleanUtils.cleanNumbers(gStopName);
 		return CleanUtils.cleanLabel(gStopName);
+	}
+
+	@Override
+	public String getStopCode(GStop gStop) {
+		return super.getStopCode(gStop); // stop code used as stop tag by real-time API
+	}
+
+	@Override
+	public int getStopId(GStop gStop) {
+		return super.getStopId(gStop); // stop ID used as stop code by real-time API
 	}
 }
