@@ -187,6 +187,27 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final Pattern SOUTH_ = Pattern.compile("((^|\\W){1}(south)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
 	private static final String SOUTH_REPLACEMENT = "$2S$4";
 
+	private static final Pattern HS = Pattern.compile("(H\\.S\\.)", Pattern.CASE_INSENSITIVE);
+	private static final String HS_REPLACEMENT = "HS";
+
+	private static final Pattern SS = Pattern.compile("(S\\.S\\.)", Pattern.CASE_INSENSITIVE);
+	private static final String SS_REPLACEMENT = "SS";
+
+	private static final Pattern CNR = Pattern.compile("(C\\.N\\.R\\.)", Pattern.CASE_INSENSITIVE);
+	private static final String CNR_REPLACEMENT = "CNR";
+
+	private static final Pattern CN = Pattern.compile("(C\\.[\\s]*N\\.)", Pattern.CASE_INSENSITIVE);
+	private static final String CN_REPLACEMENT = "CN";
+
+	private static final Pattern CI = Pattern.compile("(C\\.I\\.)", Pattern.CASE_INSENSITIVE);
+	private static final String CI_REPLACEMENT = "CI";
+
+	private static final Pattern II = Pattern.compile("(II)", Pattern.CASE_INSENSITIVE);
+	private static final String II_REPLACEMENT = "II";
+
+	private static final Pattern GO = Pattern.compile("((^|\\W){1}(GO)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
+	private static final String GO_REPLACEMENT = "$2GO$4";
+
 	@Override
 	public String cleanStopName(String gStopName) {
 		gStopName = gStopName.toLowerCase(Locale.ENGLISH);
@@ -196,6 +217,14 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		gStopName = WEST_.matcher(gStopName).replaceAll(WEST_REPLACEMENT);
 		gStopName = NORTH_.matcher(gStopName).replaceAll(NORTH_REPLACEMENT);
 		gStopName = SOUTH_.matcher(gStopName).replaceAll(SOUTH_REPLACEMENT);
+		gStopName = HS.matcher(gStopName).replaceAll(HS_REPLACEMENT);
+		gStopName = SS.matcher(gStopName).replaceAll(SS_REPLACEMENT);
+		gStopName = CNR.matcher(gStopName).replaceAll(CNR_REPLACEMENT);
+		gStopName = CN.matcher(gStopName).replaceAll(CN_REPLACEMENT);
+		gStopName = CI.matcher(gStopName).replaceAll(CI_REPLACEMENT);
+		gStopName = II.matcher(gStopName).replaceAll(II_REPLACEMENT);
+		gStopName = GO.matcher(gStopName).replaceAll(GO_REPLACEMENT);
+		gStopName = CleanUtils.removePoints(gStopName);
 		gStopName = CleanUtils.cleanStreetTypes(gStopName);
 		gStopName = CleanUtils.cleanNumbers(gStopName);
 		return CleanUtils.cleanLabel(gStopName);
