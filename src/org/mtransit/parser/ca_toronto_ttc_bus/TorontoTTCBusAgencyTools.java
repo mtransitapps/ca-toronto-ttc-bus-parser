@@ -75,10 +75,15 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final String RTS_1S = "1S";
 	private static final long RID_1S = 10001l;
 
+	private static final String RTS_2S = "2S";
+	private static final long RID_2S = 10002l;
+
 	@Override
 	public long getRouteId(GRoute gRoute) {
 		if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return RID_1S;
+		} else if (RTS_2S.equalsIgnoreCase(gRoute.getRouteShortName())) {
+			return RID_2S;
 		}
 		return Long.parseLong(gRoute.getRouteShortName()); // using route short name as route ID
 	}
@@ -104,11 +109,14 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final String COLOR_00529F = "00529F"; // BLUE (NIGHT BUSES)
 
 	private static final String COLOR_FFC41E = "FFC41E"; // 1 - Yellow (web site CSS)
+	private static final String COLOR_2B720A = "2B720A"; // 2 - Green (web site CSS)
 
 	@Override
 	public String getRouteColor(GRoute gRoute) {
 		if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return COLOR_FFC41E; // same as subway line 1
+		} else if (RTS_2S.equalsIgnoreCase(gRoute.getRouteShortName())) {
+			return COLOR_2B720A; // same as subway line 2
 		}
 		int rsn = Integer.parseInt(gRoute.getRouteShortName());
 		if (rsn >= 300 && rsn <= 399) { // Night Network
