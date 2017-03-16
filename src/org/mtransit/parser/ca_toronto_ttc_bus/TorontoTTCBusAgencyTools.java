@@ -72,6 +72,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return MAgency.ROUTE_TYPE_BUS;
 	}
 
+	private static final String RTS_1A = "1A";
+	private static final long RID_1A = 10003l;
+
 	private static final String RTS_1S = "1S";
 	private static final long RID_1S = 10001l;
 
@@ -80,7 +83,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public long getRouteId(GRoute gRoute) {
-		if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
+		if (RTS_1A.equalsIgnoreCase(gRoute.getRouteShortName())) {
+			return RID_1A;
+		} else if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return RID_1S;
 		} else if (RTS_2S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return RID_2S;
@@ -113,7 +118,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public String getRouteColor(GRoute gRoute) {
-		if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
+		if (RTS_1A.equalsIgnoreCase(gRoute.getRouteShortName())) {
+			return COLOR_FFC41E; // same as subway line 1
+		} else if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return COLOR_FFC41E; // same as subway line 1
 		} else if (RTS_2S.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return COLOR_2B720A; // same as subway line 2
