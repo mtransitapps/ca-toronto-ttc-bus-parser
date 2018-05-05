@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.mtransit.parser.CleanUtils;
 import org.mtransit.parser.DefaultAgencyTools;
 import org.mtransit.parser.Utils;
@@ -160,10 +161,19 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
-		if (mRoute.getId() == 36l) {
-			if (gTrip.getDirectionId() == 1) {
-				mTrip.setHeadsignDirection(MDirectionType.WEST);
-				return;
+		if (isGoodEnoughAccepted()) {
+			if (mRoute.getId() == 84L) {
+				if (StringUtils.isEmpty(gTrip.getTripHeadsign())) {
+					if (gTrip.getDirectionId() == 0) {
+						mTrip.setHeadsignDirection(MDirectionType.EAST);
+						return;
+					}
+				}
+			} else if (mRoute.getId() == 402L) {
+				if (gTripHeadsignLC.startsWith("soth")) {
+					mTrip.setHeadsignDirection(MDirectionType.SOUTH);
+					return;
+				}
 			}
 		}
 		int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
