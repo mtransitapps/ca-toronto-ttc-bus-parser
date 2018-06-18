@@ -162,29 +162,41 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			return;
 		}
 		if (isGoodEnoughAccepted()) {
-			if (mRoute.getId() == 84L) {
-				if (StringUtils.isEmpty(gTrip.getTripHeadsign())) {
-					if (gTrip.getDirectionId() == 0) {
-						mTrip.setHeadsignDirection(MDirectionType.EAST);
-						return;
-					}
+			if (mRoute.getId() == 176L) {
+				if (gTripHeadsignLC.endsWith("towards parklawn")) {
+					mTrip.setHeadsignDirection(MDirectionType.EAST);
+					return;
+				} else if (gTripHeadsignLC.endsWith("towards mimico go station")) {
+					mTrip.setHeadsignDirection(MDirectionType.WEST);
+					return;
 				}
 			} else if (mRoute.getId() == 402L) {
-				if (gTripHeadsignLC.startsWith("soth")) {
+				if (gTripHeadsignLC.startsWith("soth - ")) { // "SOTH" instead of "SOUTH"
 					mTrip.setHeadsignDirection(MDirectionType.SOUTH);
 					return;
 				}
 			}
 		}
-		int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
-		if (indexOf >= 0) {
-			gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
+		if (isGoodEnoughAccepted()) {
+			int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
+			if (indexOf >= 0) {
+				gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
+			}
+			indexOf = gTripHeadsignLC.indexOf(VIA);
+			if (indexOf >= 0) {
+				gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
+			}
+			mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.getDirectionId());
 		}
-		indexOf = gTripHeadsignLC.indexOf(VIA);
-		if (indexOf >= 0) {
-			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
-		}
-		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.getDirectionId());
+		System.out.printf("\n%s: Unexpected trip %s!\n", mRoute.getId(), gTrip);
+		System.exit(-1);
+	}
+
+	@Override
+	public boolean mergeHeadsign(MTrip mTrip, MTrip mTripToMerge) {
+		System.out.printf("\nUnexpected trips to merge: %s & %s!\n", mTrip, mTripToMerge);
+		System.exit(-1);
+		return false;
 	}
 
 	@Override
