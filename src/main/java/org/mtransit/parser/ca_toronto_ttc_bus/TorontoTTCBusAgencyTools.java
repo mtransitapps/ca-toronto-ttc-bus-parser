@@ -66,6 +66,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public boolean excludeTrip(GTrip gTrip) {
+		if ("NOT IN SERVICE".equals(gTrip.getTripHeadsign())) {
+			return true; // exclude
+		}
 		if (this.serviceIds != null) {
 			return excludeUselessTrip(gTrip, this.serviceIds);
 		}
@@ -165,33 +168,40 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
-		if (isGoodEnoughAccepted()) {
-			if (mRoute.getId() == 176L) {
-				if (gTripHeadsignLC.endsWith("towards parklawn")) {
+		if (mRoute.getId() == 86L) {
+			if (gTripHeadsignLC.equals("special")) {
+				if (gTrip.getDirectionId() == 0) {
 					mTrip.setHeadsignDirection(MDirectionType.EAST);
 					return;
-				} else if (gTripHeadsignLC.endsWith("towards mimico go station")) {
+				}
+				if (gTrip.getDirectionId() == 1) {
 					mTrip.setHeadsignDirection(MDirectionType.WEST);
 					return;
 				}
-			} else if (mRoute.getId() == 402L) {
-				if (gTripHeadsignLC.startsWith("soth - ")) { // "SOTH" instead of "SOUTH"
-					mTrip.setHeadsignDirection(MDirectionType.SOUTH);
-					return;
-				}
+			}
+		} else if (mRoute.getId() == 176L) {
+			if (gTripHeadsignLC.endsWith("towards parklawn")) {
+				mTrip.setHeadsignDirection(MDirectionType.EAST);
+				return;
+			} else if (gTripHeadsignLC.endsWith("towards mimico go station")) {
+				mTrip.setHeadsignDirection(MDirectionType.WEST);
+				return;
+			}
+		} else if (mRoute.getId() == 402L) {
+			if (gTripHeadsignLC.startsWith("soth - ")) { // "SOTH" instead of "SOUTH"
+				mTrip.setHeadsignDirection(MDirectionType.SOUTH);
+				return;
 			}
 		}
-		if (isGoodEnoughAccepted()) {
-			int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
-			if (indexOf >= 0) {
-				gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
-			}
-			indexOf = gTripHeadsignLC.indexOf(VIA);
-			if (indexOf >= 0) {
-				gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
-			}
-			mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.getDirectionId());
+		int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
+		if (indexOf >= 0) {
+			gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
 		}
+		indexOf = gTripHeadsignLC.indexOf(VIA);
+		if (indexOf >= 0) {
+			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
+		}
+		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.getDirectionId());
 		System.out.printf("\n%s: Unexpected trip %s!\n", mRoute.getId(), gTrip);
 		System.exit(-1);
 	}
