@@ -1,11 +1,11 @@
 package org.mtransit.parser.ca_toronto_ttc_bus;
 
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.regex.Pattern;
-
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mtransit.parser.CleanUtils;
+import org.mtransit.parser.Constants;
 import org.mtransit.parser.DefaultAgencyTools;
+import org.mtransit.parser.MTLog;
 import org.mtransit.parser.Utils;
 import org.mtransit.parser.gtfs.data.GCalendar;
 import org.mtransit.parser.gtfs.data.GCalendarDate;
@@ -18,11 +18,15 @@ import org.mtransit.parser.mt.data.MDirectionType;
 import org.mtransit.parser.mt.data.MRoute;
 import org.mtransit.parser.mt.data.MTrip;
 
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.regex.Pattern;
+
 // http://www1.toronto.ca/wps/portal/contentonly?vgnextoid=96f236899e02b210VgnVCM1000003dd60f89RCRD
 // http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
 public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
-	public static void main(String[] args) {
+	public static void main(@Nullable String[] args) {
 		if (args == null || args.length == 0) {
 			args = new String[3];
 			args[0] = "input/gtfs.zip";
@@ -35,12 +39,12 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private HashSet<String> serviceIds;
 
 	@Override
-	public void start(String[] args) {
-		System.out.printf("\nGenerating TTC bus data...");
+	public void start(@NotNull String[] args) {
+		MTLog.log("Generating TTC bus data...");
 		long start = System.currentTimeMillis();
-		this.serviceIds = extractUsefulServiceIds(args, this);
+		this.serviceIds = extractUsefulServiceIds(args, this, true);
 		super.start(args);
-		System.out.printf("\nGenerating TTC bus data... DONE in %s.\n", Utils.getPrettyDuration(System.currentTimeMillis() - start));
+		MTLog.log("Generating TTC bus data... DONE in %s.", Utils.getPrettyDuration(System.currentTimeMillis() - start));
 	}
 
 	@Override
@@ -49,7 +53,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	@Override
-	public boolean excludeCalendar(GCalendar gCalendar) {
+	public boolean excludeCalendar(@NotNull GCalendar gCalendar) {
 		if (this.serviceIds != null) {
 			return excludeUselessCalendar(gCalendar, this.serviceIds);
 		}
@@ -57,7 +61,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	@Override
-	public boolean excludeCalendarDate(GCalendarDate gCalendarDates) {
+	public boolean excludeCalendarDate(@NotNull GCalendarDate gCalendarDates) {
 		if (this.serviceIds != null) {
 			return excludeUselessCalendarDate(gCalendarDates, this.serviceIds);
 		}
@@ -65,7 +69,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	@Override
-	public boolean excludeTrip(GTrip gTrip) {
+	public boolean excludeTrip(@NotNull GTrip gTrip) {
 		if ("NOT IN SERVICE".equals(gTrip.getTripHeadsign())) {
 			return true; // exclude
 		}
@@ -76,21 +80,27 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	@Override
+	public boolean excludeRoute(@NotNull GRoute gRoute) {
+		return super.excludeRoute(gRoute);
+	}
+
+	@NotNull
+	@Override
 	public Integer getAgencyRouteType() {
 		return MAgency.ROUTE_TYPE_BUS;
 	}
 
 	private static final String RTS_1A = "1A";
-	private static final long RID_1A = 10003l;
+	private static final long RID_1A = 10_003L;
 
 	private static final String RTS_1S = "1S";
-	private static final long RID_1S = 10001l;
+	private static final long RID_1S = 10_001L;
 
 	private static final String RTS_2S = "2S";
-	private static final long RID_2S = 10002l;
+	private static final long RID_2S = 10_002L;
 
 	@Override
-	public long getRouteId(GRoute gRoute) {
+	public long getRouteId(@NotNull GRoute gRoute) {
 		if (RTS_1A.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return RID_1A;
 		} else if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
@@ -101,19 +111,24 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return Long.parseLong(gRoute.getRouteShortName()); // using route short name as route ID
 	}
 
+	@NotNull
 	@Override
-	public String getRouteLongName(GRoute gRoute) {
+	public String getRouteLongName(@NotNull GRoute gRoute) {
 		return cleanRouteLongName(gRoute);
 	}
 
-	private String cleanRouteLongName(GRoute gRoute) {
+	private String cleanRouteLongName(@NotNull GRoute gRoute) {
 		String routeLongName = gRoute.getRouteLongName();
+		if (routeLongName == null) {
+			routeLongName = Constants.EMPTY;
+		}
 		routeLongName = routeLongName.toLowerCase(Locale.ENGLISH);
 		return CleanUtils.cleanLabel(routeLongName);
 	}
 
 	private static final String AGENCY_COLOR = "B80000"; // RED (AGENCY WEB SITE CSS)
 
+	@NotNull
 	@Override
 	public String getAgencyColor() {
 		return AGENCY_COLOR;
@@ -124,8 +139,9 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final String COLOR_FFC41E = "FFC41E"; // 1 - Yellow (web site CSS)
 	private static final String COLOR_2B720A = "2B720A"; // 2 - Green (web site CSS)
 
+	@Nullable
 	@Override
-	public String getRouteColor(GRoute gRoute) {
+	public String getRouteColor(@NotNull GRoute gRoute) {
 		if (RTS_1A.equalsIgnoreCase(gRoute.getRouteShortName())) {
 			return COLOR_FFC41E; // same as subway line 1
 		} else if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
@@ -153,7 +169,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final String VIA = " via ";
 
 	@Override
-	public void setTripHeadsign(MRoute mRoute, MTrip mTrip, GTrip gTrip, GSpec gtfs) {
+	public void setTripHeadsign(@NotNull MRoute mRoute, @NotNull MTrip mTrip, @NotNull GTrip gTrip, @NotNull GSpec gtfs) {
 		String gTripHeadsignLC = gTrip.getTripHeadsign().toLowerCase(Locale.ENGLISH);
 		if (gTripHeadsignLC.startsWith(NORTH) || gTripHeadsignLC.endsWith(NORTH) || gTripHeadsignLC.endsWith(NORTHBOUND)) {
 			mTrip.setHeadsignDirection(MDirectionType.NORTH);
@@ -168,13 +184,14 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			mTrip.setHeadsignDirection(MDirectionType.WEST);
 			return;
 		}
+		final int directionId = gTrip.getDirectionId() == null ? 0 : gTrip.getDirectionId();
 		if (mRoute.getId() == 86L) {
 			if (gTripHeadsignLC.equals("special")) {
-				if (gTrip.getDirectionId() == 0) {
+				if (directionId == 0) {
 					mTrip.setHeadsignDirection(MDirectionType.EAST);
 					return;
 				}
-				if (gTrip.getDirectionId() == 1) {
+				if (directionId == 1) {
 					mTrip.setHeadsignDirection(MDirectionType.WEST);
 					return;
 				}
@@ -201,20 +218,19 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		if (indexOf >= 0) {
 			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
 		}
-		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), gTrip.getDirectionId());
-		System.out.printf("\n%s: Unexpected trip %s!\n", mRoute.getId(), gTrip);
-		System.exit(-1);
+		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), directionId);
+		MTLog.logFatal("%s: Unexpected trip %s!", mRoute.getId(), gTrip);
 	}
 
 	@Override
-	public boolean mergeHeadsign(MTrip mTrip, MTrip mTripToMerge) {
-		System.out.printf("\nUnexpected trips to merge: %s & %s!\n", mTrip, mTripToMerge);
-		System.exit(-1);
+	public boolean mergeHeadsign(@NotNull MTrip mTrip, @NotNull MTrip mTripToMerge) {
+		MTLog.logFatal("Unexpected trips to merge: %s & %s!", mTrip, mTripToMerge);
 		return false;
 	}
 
+	@NotNull
 	@Override
-	public String cleanTripHeadsign(String tripHeadsign) {
+	public String cleanTripHeadsign(@NotNull String tripHeadsign) {
 		tripHeadsign = tripHeadsign.toLowerCase(Locale.ENGLISH);
 		tripHeadsign = CleanUtils.CLEAN_AT.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		tripHeadsign = CleanUtils.CLEAN_AND.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AND_REPLACEMENT);
@@ -223,20 +239,20 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return CleanUtils.cleanLabel(tripHeadsign);
 	}
 
-	private static final Pattern SIDE = Pattern.compile("((^|\\W){1}(side)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String SIDE_REPLACEMENT = "$2$4";
+	private static final Pattern SIDE = Pattern.compile("((^|\\W)(" + "side" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String SIDE_REPLACEMENT = "$2" + "$4";
 
-	private static final Pattern EAST_ = Pattern.compile("((^|\\W){1}(east)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String EAST_REPLACEMENT = "$2E$4";
+	private static final Pattern EAST_ = Pattern.compile("((^|\\W)(" + "east" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String EAST_REPLACEMENT = "$2" + "E" + "$4";
 
-	private static final Pattern WEST_ = Pattern.compile("((^|\\W){1}(west)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String WEST_REPLACEMENT = "$2W$4";
+	private static final Pattern WEST_ = Pattern.compile("((^|\\W)(" + "west" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String WEST_REPLACEMENT = "$2" + "W" + "$4";
 
-	private static final Pattern NORTH_ = Pattern.compile("((^|\\W){1}(north)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String NORTH_REPLACEMENT = "$2N$4";
+	private static final Pattern NORTH_ = Pattern.compile("((^|\\W)(" + "north" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String NORTH_REPLACEMENT = "$2" + "N" + "$4";
 
-	private static final Pattern SOUTH_ = Pattern.compile("((^|\\W){1}(south)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String SOUTH_REPLACEMENT = "$2S$4";
+	private static final Pattern SOUTH_ = Pattern.compile("((^|\\W)(" + "south" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String SOUTH_REPLACEMENT = "$2" + "S" + "$4";
 
 	private static final Pattern HS = Pattern.compile("(H\\.S\\.)", Pattern.CASE_INSENSITIVE);
 	private static final String HS_REPLACEMENT = "HS";
@@ -256,11 +272,12 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final Pattern II = Pattern.compile("(II)", Pattern.CASE_INSENSITIVE);
 	private static final String II_REPLACEMENT = "II";
 
-	private static final Pattern GO = Pattern.compile("((^|\\W){1}(GO)(\\W|$){1})", Pattern.CASE_INSENSITIVE);
-	private static final String GO_REPLACEMENT = "$2GO$4";
+	private static final Pattern GO = Pattern.compile("((^|\\W)(" + "GO" + ")(\\W|$))", Pattern.CASE_INSENSITIVE);
+	private static final String GO_REPLACEMENT = "$2" + "GO" + "$4";
 
+	@NotNull
 	@Override
-	public String cleanStopName(String gStopName) {
+	public String cleanStopName(@NotNull String gStopName) {
 		gStopName = gStopName.toLowerCase(Locale.ENGLISH);
 		gStopName = CleanUtils.CLEAN_AT.matcher(gStopName).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		gStopName = SIDE.matcher(gStopName).replaceAll(SIDE_REPLACEMENT);
@@ -281,13 +298,14 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return CleanUtils.cleanLabel(gStopName);
 	}
 
+	@NotNull
 	@Override
-	public String getStopCode(GStop gStop) {
+	public String getStopCode(@NotNull GStop gStop) {
 		return super.getStopCode(gStop); // stop code used as stop tag by real-time API
 	}
 
 	@Override
-	public int getStopId(GStop gStop) {
+	public int getStopId(@NotNull GStop gStop) {
 		return super.getStopId(gStop); // stop ID used as stop code by real-time API
 	}
 }
