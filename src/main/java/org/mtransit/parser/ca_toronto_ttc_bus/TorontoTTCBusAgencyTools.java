@@ -22,8 +22,9 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-// http://www1.toronto.ca/wps/portal/contentonly?vgnextoid=96f236899e02b210VgnVCM1000003dd60f89RCRD
-// http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
+// https://open.toronto.ca/dataset/ttc-routes-and-schedules/
+// OLD: http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
+// http://opendata.toronto.ca/toronto.transit.commission/ttc-routes-and-schedules/OpenData_TTC_Schedules.zip
 public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	public static void main(@Nullable String[] args) {
@@ -77,11 +78,6 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			return excludeUselessTrip(gTrip, this.serviceIds);
 		}
 		return super.excludeTrip(gTrip);
-	}
-
-	@Override
-	public boolean excludeRoute(@NotNull GRoute gRoute) {
-		return super.excludeRoute(gRoute);
 	}
 
 	@NotNull
@@ -219,13 +215,12 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
 		}
 		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), directionId);
-		MTLog.logFatal("%s: Unexpected trip %s!", mRoute.getId(), gTrip);
+		throw new MTLog.Fatal("%s: Unexpected trip %s!", mRoute.getId(), gTrip);
 	}
 
 	@Override
 	public boolean mergeHeadsign(@NotNull MTrip mTrip, @NotNull MTrip mTripToMerge) {
-		MTLog.logFatal("Unexpected trips to merge: %s & %s!", mTrip, mTripToMerge);
-		return false;
+		throw new MTLog.Fatal("Unexpected trips to merge: %s & %s!", mTrip, mTripToMerge);
 	}
 
 	@NotNull
