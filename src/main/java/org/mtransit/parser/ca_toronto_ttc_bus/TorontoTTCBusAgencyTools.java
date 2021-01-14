@@ -3,7 +3,6 @@ package org.mtransit.parser.ca_toronto_ttc_bus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mtransit.parser.CleanUtils;
-import org.mtransit.parser.Constants;
 import org.mtransit.parser.DefaultAgencyTools;
 import org.mtransit.parser.MTLog;
 import org.mtransit.parser.Utils;
@@ -22,6 +21,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import static org.mtransit.parser.StringUtils.EMPTY;
+
 // https://open.toronto.ca/dataset/ttc-routes-and-schedules/
 // OLD: http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
 // http://opendata.toronto.ca/toronto.transit.commission/ttc-routes-and-schedules/OpenData_TTC_Schedules.zip
@@ -37,34 +38,35 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		new TorontoTTCBusAgencyTools().start(args);
 	}
 
-	private HashSet<String> serviceIds;
+	@Nullable
+	private HashSet<Integer> serviceIdInts;
 
 	@Override
 	public void start(@NotNull String[] args) {
 		MTLog.log("Generating TTC bus data...");
 		long start = System.currentTimeMillis();
-		this.serviceIds = extractUsefulServiceIds(args, this, true);
+		this.serviceIdInts = extractUsefulServiceIdInts(args, this, true);
 		super.start(args);
 		MTLog.log("Generating TTC bus data... DONE in %s.", Utils.getPrettyDuration(System.currentTimeMillis() - start));
 	}
 
 	@Override
 	public boolean excludingAll() {
-		return this.serviceIds != null && this.serviceIds.isEmpty();
+		return this.serviceIdInts != null && this.serviceIdInts.isEmpty();
 	}
 
 	@Override
 	public boolean excludeCalendar(@NotNull GCalendar gCalendar) {
-		if (this.serviceIds != null) {
-			return excludeUselessCalendar(gCalendar, this.serviceIds);
+		if (this.serviceIdInts != null) {
+			return excludeUselessCalendarInt(gCalendar, this.serviceIdInts);
 		}
 		return super.excludeCalendar(gCalendar);
 	}
 
 	@Override
 	public boolean excludeCalendarDate(@NotNull GCalendarDate gCalendarDates) {
-		if (this.serviceIds != null) {
-			return excludeUselessCalendarDate(gCalendarDates, this.serviceIds);
+		if (this.serviceIdInts != null) {
+			return excludeUselessCalendarDateInt(gCalendarDates, this.serviceIdInts);
 		}
 		return super.excludeCalendarDate(gCalendarDates);
 	}
@@ -74,8 +76,8 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		if ("NOT IN SERVICE".equals(gTrip.getTripHeadsign())) {
 			return true; // exclude
 		}
-		if (this.serviceIds != null) {
-			return excludeUselessTrip(gTrip, this.serviceIds);
+		if (this.serviceIdInts != null) {
+			return excludeUselessTripInt(gTrip, this.serviceIdInts);
 		}
 		return super.excludeTrip(gTrip);
 	}
@@ -116,7 +118,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private String cleanRouteLongName(@NotNull GRoute gRoute) {
 		String routeLongName = gRoute.getRouteLongName();
 		if (routeLongName == null) {
-			routeLongName = Constants.EMPTY;
+			routeLongName = EMPTY;
 		}
 		routeLongName = routeLongName.toLowerCase(Locale.ENGLISH);
 		return CleanUtils.cleanLabel(routeLongName);
@@ -152,70 +154,61 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return null; // use agency color instead of provided colors (like web site)
 	}
 
-	private static final String WESTBOUND = "westbound";
-	private static final String WEST = "west";
-	private static final String EASTBOUND = "eastbound";
-	private static final String EAST = "east";
-	private static final String SOUTHBOUND = "southbound";
-	private static final String SOUTH = "south";
-	private static final String NORTHBOUND = "northbound";
-	private static final String NORTH = "north";
-
-	private static final String TOWARDS = " towards ";
-	private static final String VIA = " via ";
-
 	@Override
 	public void setTripHeadsign(@NotNull MRoute mRoute, @NotNull MTrip mTrip, @NotNull GTrip gTrip, @NotNull GSpec gtfs) {
-		String gTripHeadsignLC = gTrip.getTripHeadsign().toLowerCase(Locale.ENGLISH);
-		if (gTripHeadsignLC.startsWith(NORTH) || gTripHeadsignLC.endsWith(NORTH) || gTripHeadsignLC.endsWith(NORTHBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.NORTH);
-			return;
-		} else if (gTripHeadsignLC.startsWith(SOUTH) || gTripHeadsignLC.endsWith(SOUTH) || gTripHeadsignLC.endsWith(SOUTHBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.SOUTH);
-			return;
-		} else if (gTripHeadsignLC.startsWith(EAST) || gTripHeadsignLC.endsWith(EAST) || gTripHeadsignLC.endsWith(EASTBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.EAST);
-			return;
-		} else if (gTripHeadsignLC.startsWith(WEST) || gTripHeadsignLC.endsWith(WEST) || gTripHeadsignLC.endsWith(WESTBOUND)) {
-			mTrip.setHeadsignDirection(MDirectionType.WEST);
-			return;
+		mTrip.setHeadsignString(
+				cleanTripHeadsign(gTrip.getTripHeadsignOrDefault()),
+				gTrip.getDirectionIdOrDefault()
+		);
+	}
+
+	@Override
+	public boolean directionFinderEnabled() {
+		return true;
+	}
+
+	private static final Pattern STARTS_WITH_DASH_ = Pattern.compile("( - .*$)", Pattern.CASE_INSENSITIVE);
+
+	@NotNull
+	@Override
+	public String cleanDirectionHeadsign(boolean fromStopName, @NotNull String directionHeadSign) {
+		if ("EAST - 84 SHEPPARD WEST towards SHEPPARD-YONGE STATION".equalsIgnoreCase(directionHeadSign)) {
+			return "West"; // wrong direction ID
 		}
-		final int directionId = gTrip.getDirectionId() == null ? 0 : gTrip.getDirectionId();
-		if (mRoute.getId() == 86L) {
-			if (gTripHeadsignLC.equals("special")) {
-				if (directionId == 0) {
-					mTrip.setHeadsignDirection(MDirectionType.EAST);
-					return;
-				}
-				if (directionId == 1) {
-					mTrip.setHeadsignDirection(MDirectionType.WEST);
-					return;
-				}
+		directionHeadSign = STARTS_WITH_DASH_.matcher(directionHeadSign).replaceAll(EMPTY); // keep East/West/North/South
+		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, directionHeadSign);
+		return CleanUtils.cleanLabel(directionHeadSign);
+	}
+
+	@Override
+	public int getDirectionType() {
+		return MTrip.HEADSIGN_TYPE_DIRECTION;
+	}
+
+	private static final String WEST = "west";
+	private static final String EAST = "east";
+	private static final String SOUTH = "south";
+	private static final String NORTH = "north";
+
+	@Nullable
+	@Override
+	public MDirectionType convertDirection(@Nullable String headSign) {
+		if (headSign != null) {
+			String gTripHeadsignLC = headSign.toLowerCase(Locale.ENGLISH);
+			switch (gTripHeadsignLC) {
+			case NORTH:
+				return MDirectionType.NORTH;
+			case SOUTH:
+				return MDirectionType.SOUTH;
+			case EAST:
+				return MDirectionType.EAST;
+			case WEST:
+				return MDirectionType.WEST;
+			default:
+				throw new MTLog.Fatal("Unexpected direction '%s' to convert!", headSign);
 			}
-		} else if (mRoute.getId() == 176L) {
-			if (gTripHeadsignLC.endsWith("towards parklawn")) {
-				mTrip.setHeadsignDirection(MDirectionType.EAST);
-				return;
-			} else if (gTripHeadsignLC.endsWith("towards mimico go station")) {
-				mTrip.setHeadsignDirection(MDirectionType.WEST);
-				return;
-			}
-		} else if (mRoute.getId() == 402L) {
-			if (gTripHeadsignLC.startsWith("soth - ")) { // "SOTH" instead of "SOUTH"
-				mTrip.setHeadsignDirection(MDirectionType.SOUTH);
-				return;
-			}
 		}
-		int indexOf = gTripHeadsignLC.indexOf(TOWARDS);
-		if (indexOf >= 0) {
-			gTripHeadsignLC = gTripHeadsignLC.substring(indexOf + TOWARDS.length());
-		}
-		indexOf = gTripHeadsignLC.indexOf(VIA);
-		if (indexOf >= 0) {
-			gTripHeadsignLC = gTripHeadsignLC.substring(0, indexOf);
-		}
-		mTrip.setHeadsignString(cleanTripHeadsign(gTripHeadsignLC), directionId);
-		throw new MTLog.Fatal("%s: Unexpected trip %s!", mRoute.getId(), gTrip);
+		return null;
 	}
 
 	@Override
@@ -223,10 +216,14 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		throw new MTLog.Fatal("Unexpected trips to merge: %s & %s!", mTrip, mTripToMerge);
 	}
 
+	private static final Pattern STARTS_WITH_TOWARDS_ = Pattern.compile("((^|^.* )towards )", Pattern.CASE_INSENSITIVE);
+
 	@NotNull
 	@Override
 	public String cleanTripHeadsign(@NotNull String tripHeadsign) {
-		tripHeadsign = tripHeadsign.toLowerCase(Locale.ENGLISH);
+		tripHeadsign = STARTS_WITH_TOWARDS_.matcher(tripHeadsign).replaceAll(EMPTY); // keep trip direction name
+		tripHeadsign = CleanUtils.removeVia(tripHeadsign);
+		tripHeadsign = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, tripHeadsign);
 		tripHeadsign = CleanUtils.CLEAN_AT.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		tripHeadsign = CleanUtils.CLEAN_AND.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AND_REPLACEMENT);
 		tripHeadsign = CleanUtils.cleanStreetTypes(tripHeadsign);
