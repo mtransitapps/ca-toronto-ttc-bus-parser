@@ -7,7 +7,6 @@ import org.jetbrains.annotations.Nullable;
 import org.mtransit.commons.CleanUtils;
 import org.mtransit.commons.TorontoTTCCommons;
 import org.mtransit.parser.DefaultAgencyTools;
-import org.mtransit.parser.gtfs.data.GRoute;
 import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.gtfs.data.GTrip;
 import org.mtransit.parser.mt.data.MAgency;
@@ -27,6 +26,12 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		new TorontoTTCBusAgencyTools().start(args);
 	}
 
+	@Nullable
+	@Override
+	public List<Locale> getSupportedLanguages() {
+		return LANG_EN;
+	}
+
 	@Override
 	public boolean defaultExcludeEnabled() {
 		return true;
@@ -40,7 +45,8 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	@Override
 	public boolean excludeTrip(@NotNull GTrip gTrip) {
-		if ("NOT IN SERVICE".equals(gTrip.getTripHeadsign())) {
+		final String tripHeadsign = gTrip.getTripHeadsignOrDefault().toLowerCase(getFirstLanguageNN());
+		if ("not in service".equals(tripHeadsign)) {
 			return true; // exclude
 		}
 		return super.excludeTrip(gTrip);
@@ -52,25 +58,19 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return MAgency.ROUTE_TYPE_BUS;
 	}
 
-	private static final String RTS_1A = "1A";
-	private static final long RID_1A = 10_003L;
-
-	private static final String RTS_1S = "1S";
-	private static final long RID_1S = 10_001L;
-
-	private static final String RTS_2S = "2S";
-	private static final long RID_2S = 10_002L;
+	@Override
+	public boolean defaultRouteIdEnabled() {
+		return true;
+	}
 
 	@Override
-	public long getRouteId(@NotNull GRoute gRoute) {
-		if (RTS_1A.equalsIgnoreCase(gRoute.getRouteShortName())) {
-			return RID_1A;
-		} else if (RTS_1S.equalsIgnoreCase(gRoute.getRouteShortName())) {
-			return RID_1S;
-		} else if (RTS_2S.equalsIgnoreCase(gRoute.getRouteShortName())) {
-			return RID_2S;
-		}
-		return Long.parseLong(gRoute.getRouteShortName()); // using route short name as route ID
+	public boolean useRouteShortNameForRouteId() {
+		return true;
+	}
+
+	@Override
+	public boolean defaultRouteLongNameEnabled() {
+		return true;
 	}
 
 	@NotNull
