@@ -1,5 +1,10 @@
 package org.mtransit.parser.ca_toronto_ttc_bus;
 
+import static org.mtransit.commons.RegexUtils.ANY;
+import static org.mtransit.commons.RegexUtils.END;
+import static org.mtransit.commons.RegexUtils.any;
+import static org.mtransit.commons.RegexUtils.group;
+import static org.mtransit.commons.RegexUtils.maybe;
 import static org.mtransit.commons.StringUtils.EMPTY;
 
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +81,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	@NotNull
 	@Override
 	public String cleanRouteLongName(@NotNull String routeLongName) {
-		routeLongName = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, routeLongName);
+		routeLongName = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), routeLongName);
 		routeLongName = CleanUtils.fixMcXCase(routeLongName);
 		return CleanUtils.cleanLabel(routeLongName);
 	}
@@ -101,16 +106,23 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return true;
 	}
 
-	private static final Pattern STARTS_WITH_DASH_ = Pattern.compile("( - .*$)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern STARTS_WITH_DASH_ = Pattern.compile(group(
+			maybe(" ") + "-" + maybe(" ") + any(ANY) + END
+	), Pattern.CASE_INSENSITIVE);
 
 	@NotNull
 	@Override
-	public String cleanDirectionHeadsign(boolean fromStopName, @NotNull String directionHeadSign) {
-		if ("EAST - 84 SHEPPARD WEST towards SHEPPARD-YONGE STATION".equalsIgnoreCase(directionHeadSign)) {
-			return "West"; // wrong direction ID
+	public String cleanDirectionHeadsign(int directionId, boolean fromStopName, @NotNull String directionHeadSign) {
+		switch (directionHeadSign.toLowerCase(getFirstLanguageNN())) {
+		case "east - 84 sheppard west towards sheppard-yonge station":
+			return "West";
+		case "east - 84 sheppard west towards sheppard-yonge station via sheppard west station": // <- used for both
+			if (directionId == 1) {
+				return "West";
+			}
 		}
 		directionHeadSign = STARTS_WITH_DASH_.matcher(directionHeadSign).replaceAll(EMPTY); // keep East/West/North/South
-		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, directionHeadSign);
+		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), directionHeadSign);
 		return CleanUtils.cleanLabel(directionHeadSign);
 	}
 
@@ -122,7 +134,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		);
 	}
 
-	private static final Pattern KEEP_LETTER_AND_TOWARDS_ = Pattern.compile("(^([a-z]+) - ([\\d]+)([a-z]?)( (.*) towards)? (.*))", Pattern.CASE_INSENSITIVE);
+	private static final Pattern KEEP_LETTER_AND_TOWARDS_ = Pattern.compile("(^([a-z]+) - (\\d+)([a-z]?)( (.*) towards)? (.*))", Pattern.CASE_INSENSITIVE);
 	private static final String KEEP_LETTER_AND_TOWARDS_REPLACEMENT = "$4 $7";
 
 	private static final Pattern ENDS_EXTRA_FARE_REQUIRED = Pattern.compile("(( -)? extra fare required .*$)", Pattern.CASE_INSENSITIVE);
@@ -136,7 +148,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		tripHeadsign = ENDS_EXTRA_FARE_REQUIRED.matcher(tripHeadsign).replaceAll(EMPTY);
 		tripHeadsign = SHORT_TURN_.matcher(tripHeadsign).replaceAll(EMPTY);
 		tripHeadsign = CleanUtils.removeVia(tripHeadsign);
-		tripHeadsign = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, tripHeadsign);
+		tripHeadsign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), tripHeadsign);
 		tripHeadsign = CleanUtils.CLEAN_AT.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		tripHeadsign = CleanUtils.CLEAN_AND.matcher(tripHeadsign).replaceAll(CleanUtils.CLEAN_AND_REPLACEMENT);
 		tripHeadsign = CleanUtils.cleanStreetTypes(tripHeadsign);
@@ -156,7 +168,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	private static final Pattern CNR = Pattern.compile("(C\\.N\\.R\\.)", Pattern.CASE_INSENSITIVE);
 	private static final String CNR_REPLACEMENT = "CNR";
 
-	private static final Pattern CN = Pattern.compile("(C\\.[\\s]*N\\.)", Pattern.CASE_INSENSITIVE);
+	private static final Pattern CN = Pattern.compile("(C\\.\\s*N\\.)", Pattern.CASE_INSENSITIVE);
 	private static final String CN_REPLACEMENT = "CN";
 
 	private static final Pattern CI = Pattern.compile("(C\\.I\\.)", Pattern.CASE_INSENSITIVE);
@@ -171,7 +183,7 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	@NotNull
 	@Override
 	public String cleanStopName(@NotNull String gStopName) {
-		gStopName = CleanUtils.toLowerCaseUpperCaseWords(Locale.ENGLISH, gStopName);
+		gStopName = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), gStopName);
 		gStopName = CleanUtils.CLEAN_AT.matcher(gStopName).replaceAll(CleanUtils.CLEAN_AT_REPLACEMENT);
 		gStopName = SIDE.matcher(gStopName).replaceAll(SIDE_REPLACEMENT);
 		gStopName = CleanUtils.cleanBounds(gStopName);
