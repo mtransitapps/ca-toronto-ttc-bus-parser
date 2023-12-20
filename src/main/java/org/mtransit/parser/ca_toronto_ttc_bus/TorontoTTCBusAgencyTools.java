@@ -115,9 +115,11 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	public String cleanDirectionHeadsign(int directionId, boolean fromStopName, @NotNull String directionHeadSign) {
 		switch (directionHeadSign.toLowerCase(getFirstLanguageNN())) {
 		case "east - 52 lawrence west towards lawrence station": // 52: 0=East / 1=West
+		case "east - 52 lawrence west towards eglinton station via avenue rd": // 52: 0=East / 1=West
 		case "east - 84 sheppard west towards sheppard-yonge station via sheppard west station": // 84: 0=East / 1=West
 		case "east - 352 lawrence west towards sunnybrook hospital": // 352: 0=East / 1=West
 		case "east - 952 lawrence west express towards lawrence station": // 952: 0=East / 1=West
+		case "east - 952 lawrence west express towards eglinton station via avenue rd": // 952: 0=East / 1=West
 			if (directionId == 1) {
 				return "West";
 			}
