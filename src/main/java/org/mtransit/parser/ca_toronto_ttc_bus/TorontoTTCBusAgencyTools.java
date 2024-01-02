@@ -10,8 +10,10 @@ import static org.mtransit.commons.StringUtils.EMPTY;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.mtransit.commons.CleanUtils;
+import org.mtransit.commons.Cleaner;
 import org.mtransit.commons.TorontoTTCCommons;
 import org.mtransit.parser.DefaultAgencyTools;
+import org.mtransit.parser.MTLog;
 import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.gtfs.data.GTrip;
 import org.mtransit.parser.mt.data.MAgency;
@@ -24,7 +26,6 @@ import java.util.regex.Pattern;
 
 // https://open.toronto.ca/dataset/ttc-routes-and-schedules/
 // OLD: http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
-// http://opendata.toronto.ca/toronto.transit.commission/ttc-routes-and-schedules/OpenData_TTC_Schedules.zip
 public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	public static void main(@NotNull String[] args) {
@@ -106,31 +107,40 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 		return true;
 	}
 
-	private static final Pattern STARTS_WITH_DASH_ = Pattern.compile(group(
+	private static final Cleaner STARTS_WITH_DASH_ = new Cleaner(group(
 			maybe(" ") + "-" + maybe(" ") + any(ANY) + END
-	), Pattern.CASE_INSENSITIVE);
+	), EMPTY, true);
 
 	@NotNull
 	@Override
 	public String cleanDirectionHeadsign(int directionId, boolean fromStopName, @NotNull String directionHeadSign) {
-		switch (directionHeadSign.toLowerCase(getFirstLanguageNN())) {
-		case "east - 52 lawrence west towards lawrence station": // 52: 0=East / 1=West
-		case "east - 52 lawrence west towards eglinton station via avenue rd": // 52: 0=East / 1=West
-		case "east - 84 sheppard west towards sheppard-yonge station via sheppard west station": // 84: 0=East / 1=West
-		case "east - 352 lawrence west towards sunnybrook hospital": // 352: 0=East / 1=West
-		case "east - 952 lawrence west express towards lawrence station": // 952: 0=East / 1=West
-		case "east - 952 lawrence west express towards eglinton station via avenue rd": // 952: 0=East / 1=West
-			if (directionId == 1) {
-				return "West";
+		directionHeadSign = STARTS_WITH_DASH_.clean(directionHeadSign); // keep East/West/North/South
+		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), directionHeadSign);
+		// 0=East / 1=West
+		// 0=South / 1=North
+		if (directionId == 0) {
+			if (!directionHeadSign.toLowerCase(Locale.ENGLISH).equals("east")
+					&& !directionHeadSign.toLowerCase(Locale.ENGLISH).equals("south")) {
+				MTLog.log("Wrong direction headsign %s for direction ID %d", directionHeadSign, directionId);
+				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("west")) {
+					return "East";
+				}
+				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("north")) {
+					return "South";
+				}
 			}
-			break;
-		case "east - 84 sheppard west towards sheppard-yonge station": // 84: 0=East / 1=West
-			if (directionId == 0) {
-				return "West";
+		} else if (directionId == 1) {
+			if (!directionHeadSign.toLowerCase(Locale.ENGLISH).equals("west")
+					&& !directionHeadSign.toLowerCase(Locale.ENGLISH).equals("north")) {
+				MTLog.log("Wrong direction headsign %s for direction ID %d", directionHeadSign, directionId);
+				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("east")) {
+					return "West";
+				}
+				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("south")) {
+					return "North";
+				}
 			}
 		}
-		directionHeadSign = STARTS_WITH_DASH_.matcher(directionHeadSign).replaceAll(EMPTY); // keep East/West/North/South
-		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), directionHeadSign);
 		return CleanUtils.cleanLabel(directionHeadSign);
 	}
 
