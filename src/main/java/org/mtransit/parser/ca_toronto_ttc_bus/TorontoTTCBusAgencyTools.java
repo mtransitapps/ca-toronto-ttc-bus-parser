@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 // https://open.toronto.ca/dataset/ttc-routes-and-schedules/
-// OLD: http://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
+// OLD: https://opendata.toronto.ca/TTC/routes/OpenData_TTC_Schedules.zip
 public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 
 	public static void main(@NotNull String[] args) {
