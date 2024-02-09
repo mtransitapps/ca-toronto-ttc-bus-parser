@@ -1,10 +1,16 @@
 package org.mtransit.parser.ca_toronto_ttc_bus;
 
+import static org.mtransit.commons.RegexUtils.ALPHA_NUM_CAR;
 import static org.mtransit.commons.RegexUtils.ANY;
+import static org.mtransit.commons.RegexUtils.BEGINNING;
+import static org.mtransit.commons.RegexUtils.DIGIT_CAR;
 import static org.mtransit.commons.RegexUtils.END;
+import static org.mtransit.commons.RegexUtils.WHITESPACE_CAR;
 import static org.mtransit.commons.RegexUtils.any;
 import static org.mtransit.commons.RegexUtils.group;
+import static org.mtransit.commons.RegexUtils.mGroup;
 import static org.mtransit.commons.RegexUtils.maybe;
+import static org.mtransit.commons.RegexUtils.oneOrMore;
 import static org.mtransit.commons.StringUtils.EMPTY;
 
 import org.jetbrains.annotations.NotNull;
@@ -13,7 +19,6 @@ import org.mtransit.commons.CleanUtils;
 import org.mtransit.commons.Cleaner;
 import org.mtransit.commons.TorontoTTCCommons;
 import org.mtransit.parser.DefaultAgencyTools;
-import org.mtransit.parser.MTLog;
 import org.mtransit.parser.gtfs.data.GStop;
 import org.mtransit.parser.gtfs.data.GTrip;
 import org.mtransit.parser.mt.data.MAgency;
@@ -108,39 +113,53 @@ public class TorontoTTCBusAgencyTools extends DefaultAgencyTools {
 	}
 
 	private static final Cleaner STARTS_WITH_DASH_ = new Cleaner(group(
-			maybe(" ") + "-" + maybe(" ") + any(ANY) + END
+			BEGINNING + group(maybe(oneOrMore(ALPHA_NUM_CAR))) +
+					maybe(WHITESPACE_CAR) + "-" + maybe(WHITESPACE_CAR) +
+					group(oneOrMore(DIGIT_CAR)) +
+					maybe(WHITESPACE_CAR) + any(ANY) + END
 	), EMPTY, true);
 
+	private static final String STARTS_WITH_DASH_KEEP_DIRECTION = mGroup(2);
+
+	private static final String STARTS_WITH_DASH_KEEP_RSN = mGroup(3);
+
+	@SuppressWarnings("DuplicateBranchesInSwitch")
 	@NotNull
 	@Override
 	public String cleanDirectionHeadsign(int directionId, boolean fromStopName, @NotNull String directionHeadSign) {
-		directionHeadSign = STARTS_WITH_DASH_.clean(directionHeadSign); // keep East/West/North/South
-		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), directionHeadSign);
-		// 0=East / 1=West
-		// 0=South / 1=North
-		if (directionId == 0) {
-			if (!directionHeadSign.toLowerCase(Locale.ENGLISH).equals("east")
-					&& !directionHeadSign.toLowerCase(Locale.ENGLISH).equals("south")) {
-				MTLog.log("Wrong direction headsign %s for direction ID %d", directionHeadSign, directionId);
-				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("west")) {
-					return "East";
-				}
-				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("north")) {
-					return "South";
-				}
+		// east/west north/south and direction ID 1/0 are NOT a match
+		final String rsn = STARTS_WITH_DASH_.clean(directionHeadSign, STARTS_WITH_DASH_KEEP_RSN);
+		directionHeadSign = STARTS_WITH_DASH_.clean(directionHeadSign, STARTS_WITH_DASH_KEEP_DIRECTION); // keep East/West/North/South
+		final String dirLC = directionHeadSign.toLowerCase(getFirstLanguageNN());
+		switch (rsn) {
+		case "52":
+			if (directionId == 1 && dirLC.equalsIgnoreCase("East")) {
+				return "West";
 			}
-		} else if (directionId == 1) {
-			if (!directionHeadSign.toLowerCase(Locale.ENGLISH).equals("west")
-					&& !directionHeadSign.toLowerCase(Locale.ENGLISH).equals("north")) {
-				MTLog.log("Wrong direction headsign %s for direction ID %d", directionHeadSign, directionId);
-				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("east")) {
-					return "West";
-				}
-				if (directionHeadSign.toLowerCase(Locale.ENGLISH).equals("south")) {
-					return "North";
-				}
+			break;
+		case "84":
+			if (directionId == 1 && dirLC.equalsIgnoreCase("East")) {
+				return "West";
+			} else if (directionId == 0 && dirLC.equalsIgnoreCase("West")) {
+				return "East";
 			}
+			break;
+		case "332":
+			if (directionId == 1 && dirLC.equalsIgnoreCase("East")) {
+				return "West";
+			}
+		case "352":
+			if (directionId == 1 && dirLC.equalsIgnoreCase("East")) {
+				return "West";
+			}
+			break;
+		case "952":
+			if (directionId == 1 && dirLC.equalsIgnoreCase("East")) {
+				return "West";
+			}
+			break;
 		}
+		directionHeadSign = CleanUtils.toLowerCaseUpperCaseWords(getFirstLanguageNN(), directionHeadSign);
 		return CleanUtils.cleanLabel(directionHeadSign);
 	}
 
